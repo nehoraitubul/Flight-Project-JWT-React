@@ -1,7 +1,10 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from rest_framework import mixins
+from rest_framework.viewsets import GenericViewSet
+from django.contrib.auth.models import User
 
 from flight_app.serializers.auth import SignupSerializer, UserSerializer
 
@@ -28,3 +31,25 @@ def me(request):
     # you will get here only if the user is already authenticated!
     user_serializer = UserSerializer(instance=request.user, many=False)
     return Response(data=user_serializer.data)
+
+
+
+
+class GetUser(mixins.RetrieveModelMixin,
+              mixins.ListModelMixin,
+              GenericViewSet):
+
+        queryset = User.objects.all()
+
+        permission_classes = [IsAuthenticated, IsAdminUser]
+
+        serializer_class = UserSerializer
+
+
+        def get_queryset(self):
+            qs = self.queryset
+
+            if 'name' in self.request.query_params:
+                qs = qs.filter(first_name=self.request.query_params['name'])
+
+            return qs
